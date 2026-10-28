@@ -1,0 +1,26 @@
+{
+  "name": "@expospace/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Interface React d'ExpoSpace : catalogue, studio, visite 3D et galerie 2D — dépendances en devDependencies : elles sont intégrées au build Vite, rien ne s’installe sur le serveur.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "@expospace/shared": "0.1.0",
+    "@jcbuisson/express-x": "4.0.5",
+    "@react-three/fiber": "9.8.1",
+    "@vitejs/plugin-react": "6.1.2",
+    "@vueuse/core": "14.4.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "react-router": "7.18.4",
+    "socket.io-client": "4.8.4",
+    "three": "0.186.1",
+    "vite": "8.3.4",
+    "vue": "3.5.44"
+  }
+}

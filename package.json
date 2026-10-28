@@ -1,0 +1,54 @@
+{
+  "name": "expospace",
+  "version": "0.1.0",
+  "private": true,
+  "description": "ExpoSpace — créer son exposition et visiter les musées en 3D (livraison du 1er décembre 2026)",
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "db:start": "node scripts/db.mjs",
+    "db:stop": "node scripts/db.mjs --stop",
+    "db:generate": "npm run generate -w @expospace/api",
+    "db:migrate": "npm run migrate:dev -w @expospace/api",
+    "db:deploy": "node scripts/migrate.mjs",
+    "db:status": "node scripts/migrate.mjs --status",
+    "db:seed": "node scripts/seed.mjs",
+    "prisma": "npm exec -w @expospace/api -- prisma",
+    "dev": "node scripts/dev.mjs",
+    "dev:api": "npm run dev -w @expospace/api",
+    "dev:web": "npm run dev -w @expospace/web",
+    "build": "npm run build -w @expospace/web",
+    "start": "node app.cjs",
+    "lint": "eslint .",
+    "test": "npm run test:unit && npm run test:api",
+    "test:unit": "vitest run --project unit",
+    "test:api": "node scripts/test-api.mjs",
+    "test:e2e": "playwright test",
+    "admin:promote": "node scripts/admin.mjs promote",
+    "admin:demote": "node scripts/admin.mjs demote",
+    "uploads:cleanup": "node scripts/cleanup-uploads.mjs",
+    "db:check": "node scripts/db-check.mjs",
+    "release": "node scripts/release.mjs",
+    "backup": "node scripts/backup.mjs",
+    "restore": "node scripts/restore.mjs"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@playwright/test": "1.64.0",
+    "eslint": "10.12.0",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "globals": "17.13.0",
+    "vitest": "5.0.4"
+  },
+  "allowScripts": {
+    "argon2@0.45.1": true,
+    "prisma@7.10.0": true,
+    "@prisma/engines@7.10.0": true
+  }
+}
