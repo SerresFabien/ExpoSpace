@@ -1,0 +1,139 @@
+// Schéma MariaDB : UUID en CHAR(36), dates en UTC.
+// Contraintes CHECK : migration « contraintes ».
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum ExhibitionStatus {
+  DRAFT
+  PUBLISHED
+}
+
+model User {
+  id               String    @id @default(uuid()) @db.Char(36)
+  // Identifiant en minuscules.
+  usernameKey      String    @unique @db.VarChar(30)
+  displayName      String    @db.VarChar(60)
+  // Argon2id.
+  passwordHash     String
+  recoveryCodeHash String
+  role             Role      @default(USER)
+  // Incrémenté pour invalider les sessions.
+  sessionVersion   Int       @default(1)
+  suspendedAt      DateTime?
+  createdAt        DateTime  @default(now())
+
+  exhibitions Exhibition[]
+}
+
+model Exhibition {
+  id             String           @id @default(uuid()) @db.Char(36)
+  ownerId        String           @db.Char(36)
+  title          String           @db.VarChar(120)
+  description    String           @default("") @db.VarChar(3000)
+  status         ExhibitionStatus @default(DRAFT)
+  // Version de l'ETag.
+  version        Int              @default(1)
+  // Œuvre placée, obligatoire pour publier.
+  coverArtworkId String?          @unique @db.Char(36)
+  publishedAt    DateTime?
+  // Masquage par l'administration.
+  suspendedAt    DateTime?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  owner        User      @relation(fields: [ownerId], references: [id], onDelete: Restrict)
+  coverArtwork Artwork?  @relation("ExhibitionCover", fields: [coverArtworkId], references: [id], onDelete: SetNull)
+  rooms        Room[]
+  artworks     Artwork[] @relation("ExhibitionArtworks")
+
+  @@index([ownerId])
+  @@index([status, publishedAt(sort: Desc), id(sort: Desc)])
+}
+
+model Room {
+  id           String @id @default(uuid()) @db.Char(36)
+  exhibitionId String @db.Char(36)
+  name         String @db.VarChar(60)
+  // Ordre de visite.
+  position     Int
+  wallColor    String @default("white") @db.VarChar(20)
+
+  exhibition    Exhibition  @relation(fields: [exhibitionId], references: [id], onDelete: Cascade)
+  placements    Placement[]
+  doors         Door[]      @relation("RoomDoors")
+  incomingDoors Door[]      @relation("DoorTarget")
+
+  @@unique([exhibitionId, position])
+}
+
+model Artwork {
+  id            String   @id @default(uuid()) @db.Char(36)
+  exhibitionId  String   @db.Char(36)
+  title         String   @default("") @db.VarChar(120)
+  artistName    String   @default("") @db.VarChar(120)
+  description   String   @default("") @db.VarChar(3000)
+  altText       String   @default("") @db.VarChar(300)
+  // Noms aléatoires, relatifs au dossier des images.
+  imagePath     String   @unique @db.VarChar(100)
+  thumbnailPath String   @unique @db.VarChar(100)
+  widthPx       Int
+  heightPx      Int
+  // Taille des deux variantes, en octets.
+  byteSize      Int
+  createdAt     DateTime @default(now())
+
+  exhibition Exhibition  @relation("ExhibitionArtworks", fields: [exhibitionId], references: [id], onDelete: Cascade)
+  coverOf    Exhibition? @relation("ExhibitionCover")
+  placement  Placement?
+
+  @@index([exhibitionId])
+}
+
+model Placement {
+  id        String @id @default(uuid()) @db.Char(36)
+  roomId    String @db.Char(36)
+  artworkId String @unique @db.Char(36)
+  // Code de place (N1 à W3).
+  slotCode  String @db.VarChar(3)
+
+  room    Room    @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  artwork Artwork @relation(fields: [artworkId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, slotCode])
+}
+
+// Porte posée sur une place, vers une autre salle.
+model Door {
+  id           String @id @default(uuid()) @db.Char(36)
+  roomId       String @db.Char(36)
+  // Code de place (N1 à W3).
+  slotCode     String @db.VarChar(3)
+  targetRoomId String @db.Char(36)
+
+  room       Room @relation("RoomDoors", fields: [roomId], references: [id], onDelete: Cascade)
+  targetRoom Room @relation("DoorTarget", fields: [targetRoomId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, slotCode])
+  @@index([targetRoomId])
+}
+
+// Sessions express-session.
+model Session {
+  sid         String   @id @db.VarChar(128)
+  sessionData String   @db.Text
+  expiresAt   DateTime @db.DateTime(3)
+
+  @@index([expiresAt])
+}
